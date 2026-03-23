@@ -41,31 +41,29 @@ RUN pnpm --filter @guandan/server run build && \
     pnpm --filter @guandan/web run build
 
 # ====================
-# 阶段2: 运行时
+# 阶2: 运行时
 # ====================
 FROM node:20-alpine AS runtime
 
-# 安装 pnpm、nginx 和原生模块编译工具（better-sqlite3 需要）
-RUN npm install -g pnpm && \
-    apk add --no-cache nginx python3 make g++
+# 安装 nginx
+RUN apk add --no-cache nginx
 
 WORKDIR /app
 
-# 复制 pnpm 配置文件
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+# 从 builder 复制 node_modules（包含已编译的 better-sqlite3 原生模块）
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=builder /app/packages/engine/node_modules ./packages/engine/node_modules
+COPY --from=builder /app/packages/server/node_modules ./packages/server/node_modules
 
-# 复制各包的 package.json（用于安装生产依赖）
-COPY packages/shared/package.json packages/shared/
-COPY packages/engine/package.json packages/engine/
-COPY packages/server/package.json packages/server/
+# 复制 package.json 文件
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
+COPY --from=builder /app/packages/engine/package.json ./packages/engine/
+COPY --from=builder /app/packages/server/package.json ./packages/server/
 
-# 安装生产依赖（包含原生模块编译）
-RUN pnpm install --prod --frozen-lockfile
-
-# 清理编译工具减小镜像体积
-RUN apk del python3 make g++
-
-# 从 builder 阶段复制编译后的代码
+# 复制编译后的代码
 COPY --from=builder /app/packages/shared/dist packages/shared/dist
 COPY --from=builder /app/packages/engine/dist packages/engine/dist
 COPY --from=builder /app/packages/server/dist packages/server/dist
