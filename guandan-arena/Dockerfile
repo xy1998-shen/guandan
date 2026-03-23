@@ -21,8 +21,11 @@ COPY packages/web/ packages/web/
 # 安装依赖
 RUN pnpm install --frozen-lockfile
 
-# 构建所有包
-RUN pnpm -r run build
+# 按依赖顺序构建：shared → engine/web → server
+RUN pnpm --filter @guandan/shared run build && \
+    pnpm --filter @guandan/engine run build && \
+    pnpm --filter @guandan/web run build && \
+    pnpm --filter @guandan/server run build
 
 # ====================
 # 阶段2: 运行时
