@@ -21,12 +21,11 @@ COPY packages/web/ packages/web/
 # 安装依赖
 RUN pnpm install --frozen-lockfile
 
-# 使用 tsc --build 处理 project references 依赖链
-# shared 先构建，engine 使用 tsc -b 自动处理依赖关系
-RUN cd packages/shared && npx tsc && cd ../.. && \
-    cd packages/engine && npx tsc --build && cd ../.. && \
-    pnpm --filter @guandan/web run build && \
-    pnpm --filter @guandan/server run build
+# engine 的 tsc --build 会自动先构建 shared（通过 references）
+# 不要预构建 shared，避免 Docker 环境中的时间戳校验失败
+RUN cd packages/engine && npx tsc --build && cd ../.. && \
+    pnpm --filter @guandan/server run build && \
+    pnpm --filter @guandan/web run build
 
 # ====================
 # 阶段2: 运行时
