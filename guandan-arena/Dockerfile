@@ -21,9 +21,10 @@ COPY packages/web/ packages/web/
 # 安装依赖
 RUN pnpm install --frozen-lockfile
 
-# 按依赖顺序构建：shared → engine/web → server
-RUN pnpm --filter @guandan/shared run build && \
-    pnpm --filter @guandan/engine run build && \
+# 使用 tsc --build 处理 project references 依赖链
+# shared 先构建，engine 使用 tsc -b 自动处理依赖关系
+RUN cd packages/shared && npx tsc && cd ../.. && \
+    cd packages/engine && npx tsc --build && cd ../.. && \
     pnpm --filter @guandan/web run build && \
     pnpm --filter @guandan/server run build
 
