@@ -3,8 +3,9 @@
 # ====================
 FROM node:20-alpine AS builder
 
-# 安装 pnpm
-RUN npm install -g pnpm
+# 安装 pnpm 和原生模块编译工具（better-sqlite3 需要 python3/make/g++）
+RUN npm install -g pnpm && \
+    apk add --no-cache python3 make g++
 
 WORKDIR /app
 
