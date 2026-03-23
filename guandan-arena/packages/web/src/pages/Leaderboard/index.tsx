@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Layout, Row, Col, Card, Statistic, Table, Empty, Typography, Progress, Space, List, Tag } from 'antd';
+import { Layout, Row, Col, Card, Statistic, Table, Empty, Typography, Progress, Space, List, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useApi } from '../../hooks/useApi';
@@ -139,9 +139,65 @@ export const Leaderboard: React.FC = () => {
       title: '平均出牌间隔',
       dataIndex: 'avgPlayIntervalMs',
       key: 'avgPlayIntervalMs',
-      width: 150,
+      width: 140,
       align: 'center',
-      render: (value: number) => `${Math.round(value / 1000)}s`,
+      render: (value: number) => `${(value / 1000).toFixed(1)}s`,
+    },
+    {
+      title: '平均响应',
+      dataIndex: 'avgResponseTimeMs',
+      key: 'avgResponseTimeMs',
+      width: 120,
+      align: 'center',
+      sorter: (a, b) => a.avgResponseTimeMs - b.avgResponseTimeMs,
+      render: (value: number) => (
+        <Tooltip title={`${value.toFixed(0)}ms`}>
+          <span>{(value / 1000).toFixed(2)}s</span>
+        </Tooltip>
+      ),
+    },
+    {
+      title: '炸弹命中率',
+      dataIndex: 'bombSuccessRate',
+      key: 'bombSuccessRate',
+      width: 130,
+      align: 'center',
+      sorter: (a, b) => a.bombSuccessRate - b.bombSuccessRate,
+      render: (value: number) => {
+        const percent = Math.round(value * 100);
+        const color = percent >= 60 ? 'var(--primary-green)' : percent >= 40 ? 'var(--gold)' : 'var(--danger, #ff4d4f)';
+        return (
+          <span style={{ color, fontWeight: 500 }}>{percent}%</span>
+        );
+      },
+    },
+    {
+      title: '风险评分',
+      dataIndex: 'riskScore',
+      key: 'riskScore',
+      width: 140,
+      align: 'center',
+      sorter: (a, b) => a.riskScore - b.riskScore,
+      render: (value: number) => {
+        let color: string;
+        let label: string;
+        if (value < 30) {
+          color = 'blue';
+          label = '保守';
+        } else if (value < 60) {
+          color = 'gold';
+          label = '均衡';
+        } else {
+          color = 'red';
+          label = '激进';
+        }
+        return (
+          <Space size={4}>
+            <span>{value}</span>
+            <Tag color={color} style={{ margin: 0 }}>{label}</Tag>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -212,7 +268,7 @@ export const Leaderboard: React.FC = () => {
               emptyText: <Empty description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} />,
             }}
             pagination={false}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1600 }}
             rowClassName={(record) => {
               if (record.rank <= 3) return `table-row rank-${record.rank}`;
               return 'table-row rank-normal';

@@ -112,9 +112,34 @@ export function initDatabase(): void {
       seat INTEGER NOT NULL,
       combo_type TEXT NOT NULL,
       cards TEXT NOT NULL,
-      timestamp INTEGER NOT NULL
+      timestamp INTEGER NOT NULL,
+      response_time_ms INTEGER,
+      hand_count_before INTEGER,
+      is_auto_play INTEGER DEFAULT 0,
+      is_leading INTEGER DEFAULT 0,
+      trick_winner INTEGER DEFAULT 0
     )
   `);
+
+  // 向后兼容：旧库可能缺少 plays 表新增字段
+  const playsColumns = sqlite
+    .prepare('PRAGMA table_info(plays)')
+    .all() as Array<{ name: string }>;
+  if (!playsColumns.some((column) => column.name === 'response_time_ms')) {
+    sqlite.exec('ALTER TABLE plays ADD COLUMN response_time_ms INTEGER');
+  }
+  if (!playsColumns.some((column) => column.name === 'hand_count_before')) {
+    sqlite.exec('ALTER TABLE plays ADD COLUMN hand_count_before INTEGER');
+  }
+  if (!playsColumns.some((column) => column.name === 'is_auto_play')) {
+    sqlite.exec('ALTER TABLE plays ADD COLUMN is_auto_play INTEGER DEFAULT 0');
+  }
+  if (!playsColumns.some((column) => column.name === 'is_leading')) {
+    sqlite.exec('ALTER TABLE plays ADD COLUMN is_leading INTEGER DEFAULT 0');
+  }
+  if (!playsColumns.some((column) => column.name === 'trick_winner')) {
+    sqlite.exec('ALTER TABLE plays ADD COLUMN trick_winner INTEGER DEFAULT 0');
+  }
 
   // 创建 leaderboard 表
   sqlite.exec(`
@@ -125,7 +150,40 @@ export function initDatabase(): void {
       rounds_played INTEGER NOT NULL DEFAULT 0,
       rounds_won INTEGER NOT NULL DEFAULT 0,
       win_rate REAL NOT NULL DEFAULT 0,
-      elo_rating INTEGER NOT NULL DEFAULT 1000
+      elo_rating INTEGER NOT NULL DEFAULT 1000,
+      avg_response_time_ms REAL DEFAULT 0,
+      bomb_total INTEGER DEFAULT 0,
+      bomb_success INTEGER DEFAULT 0,
+      risk_score REAL DEFAULT 0
+    )
+  `);
+
+  // 向后兼容：旧库可能缺少 leaderboard 表新增字段
+  const leaderboardColumns = sqlite
+    .prepare('PRAGMA table_info(leaderboard)')
+    .all() as Array<{ name: string }>;
+  if (!leaderboardColumns.some((column) => column.name === 'avg_response_time_ms')) {
+    sqlite.exec('ALTER TABLE leaderboard ADD COLUMN avg_response_time_ms REAL DEFAULT 0');
+  }
+  if (!leaderboardColumns.some((column) => column.name === 'bomb_total')) {
+    sqlite.exec('ALTER TABLE leaderboard ADD COLUMN bomb_total INTEGER DEFAULT 0');
+  }
+  if (!leaderboardColumns.some((column) => column.name === 'bomb_success')) {
+    sqlite.exec('ALTER TABLE leaderboard ADD COLUMN bomb_success INTEGER DEFAULT 0');
+  }
+  if (!leaderboardColumns.some((column) => column.name === 'risk_score')) {
+    sqlite.exec('ALTER TABLE leaderboard ADD COLUMN risk_score REAL DEFAULT 0');
+  }
+
+  // 创建 teammate_stats 表
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS teammate_stats (
+      agent_id TEXT NOT NULL REFERENCES agents(id),
+      teammate_id TEXT NOT NULL REFERENCES agents(id),
+      games_played INTEGER DEFAULT 0,
+      games_won INTEGER DEFAULT 0,
+      win_rate REAL DEFAULT 0,
+      PRIMARY KEY (agent_id, teammate_id)
     )
   `);
 

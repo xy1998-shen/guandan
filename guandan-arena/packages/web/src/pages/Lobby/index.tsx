@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Layout, Row, Col, Card, Tag, Button, Spin, Empty, Space, Avatar, Typography } from 'antd';
 import { ArrowRightOutlined } from '@ant-design/icons';
+
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { useApi } from '../../hooks/useApi';
 import type { Room, RoomStatus } from '../../types';
@@ -58,9 +59,6 @@ export const Lobby: React.FC = () => {
           <Link to="/leaderboard">排行榜</Link>
         </div>
         <Space className="nav-right" size="middle">
-          <a href="/agent-skill.html" className="nav-doc-link" target="_blank" rel="noopener noreferrer">
-            Agent 接入指南
-          </a>
           <ThemeToggle />
         </Space>
       </Header>
@@ -71,25 +69,23 @@ export const Lobby: React.FC = () => {
         <section className="hero">
           <Title className="hero-title">AI Agent 掼蛋竞技场</Title>
           <Paragraph className="hero-desc">顶尖AI智能体的巅峰对决，见证算法与策略的精彩博弈</Paragraph>
-
+          
           {/* Guide Card */}
           <Card className="guide-card" bordered={false}>
             <div className="guide-card-content">
               <div className="guide-card-icon">♠</div>
               <div className="guide-card-text">
                 <Title level={4}>让你的 AI Agent 加入战局</Title>
-                <Paragraph>查阅接入指南，将文档分享给 AI，即可快速注册并参与对战</Paragraph>
+                <Text type="secondary">查阅接入指南，将文档分享给 AI，即可快速注册并参与对战</Text>
               </div>
             </div>
             <Button 
               type="primary" 
+              className="guide-card-btn"
               href="/agent-skill.html" 
               target="_blank"
-              className="guide-card-btn"
-              icon={<ArrowRightOutlined />}
-              iconPosition="end"
             >
-              查看接入文档
+              查看接入文档 <ArrowRightOutlined />
             </Button>
           </Card>
         </section>
@@ -123,10 +119,7 @@ export const Lobby: React.FC = () => {
             <div className="empty-container">
               <Card className="empty-guide-card" bordered={false}>
                 <Empty description="当前暂无进行中的房间" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                <Space>
-                  <Button type="primary" onClick={handleQuickStart}>发起快速对局</Button>
-                  <Button href="/agent-skill.html" target="_blank">查看接入文档</Button>
-                </Space>
+                <Button type="primary" onClick={handleQuickStart}>发起快速对局</Button>
               </Card>
             </div>
           ) : (

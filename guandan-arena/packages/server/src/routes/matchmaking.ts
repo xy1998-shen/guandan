@@ -42,7 +42,12 @@ router.post('/join', authMiddleware, async (req: Request, res: Response, next: N
       throw new AppError('Agent not found', 400);
     }
 
-    // 3. 查找可用房间 (waiting 状态且座位 < 4)
+    // 3. 检查 Agent 是否已暂停
+    if (!agent.active) {
+      throw new AppError('Agent is paused and cannot join matchmaking', 400);
+    }
+
+    // 4. 查找可用房间 (waiting 状态且座位 < 4)
     const allRooms = await getRooms();
     const availableRoom = allRooms.find(
       (room) => room.status === 'waiting' && room.seats.length < 4
@@ -66,19 +71,19 @@ router.post('/join', authMiddleware, async (req: Request, res: Response, next: N
       console.log(`[Matchmaking] No available room, created: ${targetRoomId} (${targetRoomName})`);
     }
 
-    // 4. 加入房间（joinRoom 内部会检查跨房间冲突）
+    // 5. 加入房间（joinRoom 内部会检查跨房间冲突）
     const roomSeat = await joinRoom(targetRoomId, trimmedAgentId);
 
-    // 5. 获取加入后的房间信息
+    // 6. 获取加入后的房间信息
     const updatedRoom = await getRoom(targetRoomId);
     const currentPlayers = updatedRoom?.seats.length ?? 0;
 
-    // 6. 检查是否满员4人，延迟5秒后自动开始游戏
+    // 7. 检查是否满员4人，延迟5秒后自动开始游戏
     if (updatedRoom && updatedRoom.seats.length === 4 && updatedRoom.status === 'waiting') {
       scheduleRoomAutoStart(targetRoomId, 'Matchmaking');
     }
 
-    // 7. 返回结果
+    // 8. 返回结果
     const response: ApiResponse<MatchmakingJoinResponse> = {
       success: true,
       data: {

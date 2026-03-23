@@ -87,6 +87,12 @@ export const plays = sqliteTable('plays', {
   comboType: text('combo_type').notNull(),
   cards: text('cards').notNull(), // JSON array
   timestamp: integer('timestamp').notNull(),
+  // 新增统计字段
+  responseTimeMs: integer('response_time_ms'), // Agent 出牌响应时间（毫秒）
+  handCountBefore: integer('hand_count_before'), // 出牌前手牌数量
+  isAutoPlay: integer('is_auto_play').default(0), // 是否自动出牌（掉线/超时时为1）
+  isLeading: integer('is_leading').default(0), // 是否为首出（本轮第一个出牌）
+  trickWinner: integer('trick_winner').default(0), // 该出牌是否赢得了本 trick（1=赢,0=没赢或还没结束）
 });
 
 /**
@@ -102,7 +108,33 @@ export const leaderboard = sqliteTable('leaderboard', {
   roundsWon: integer('rounds_won').notNull().default(0),
   winRate: real('win_rate').notNull().default(0),
   eloRating: integer('elo_rating').notNull().default(1000),
+  // 新增统计字段
+  avgResponseTimeMs: real('avg_response_time_ms').default(0), // 平均出牌响应时间
+  bombTotal: integer('bomb_total').default(0), // 总炸弹出牌数
+  bombSuccess: integer('bomb_success').default(0), // 成功压制的炸弹数
+  riskScore: real('risk_score').default(0), // 风险偏好评分（0-100）
 });
+
+/**
+ * Teammate Stats 表 - 存储队友配合统计
+ */
+export const teammateStats = sqliteTable(
+  'teammate_stats',
+  {
+    agentId: text('agent_id')
+      .notNull()
+      .references(() => agents.id),
+    teammateId: text('teammate_id')
+      .notNull()
+      .references(() => agents.id),
+    gamesPlayed: integer('games_played').default(0), // 一起的对局数
+    gamesWon: integer('games_won').default(0), // 一起赢的对局数
+    winRate: real('win_rate').default(0), // 配合胜率
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.agentId, table.teammateId] }),
+  })
+);
 
 // 导出所有表用于 drizzle-kit 和类型推导
 export const schema = {
@@ -113,4 +145,5 @@ export const schema = {
   rounds,
   plays,
   leaderboard,
+  teammateStats,
 };

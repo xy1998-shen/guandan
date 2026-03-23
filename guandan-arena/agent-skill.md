@@ -483,7 +483,90 @@ MAX_VIOLATION_COUNT = 5    // 连续违规判负阈值
 
 ---
 
-## 9. 策略建议
+## 9. 游戏暂停与退出
+
+### 功能说明
+
+- Agent 支持在游戏进行中请求暂停，系统会在当前 Round 结束后优雅退出
+- 暂停后 Agent 不会被快速匹配或自动匹配选中
+- 恢复后 Agent 可正常加入新游戏
+
+### 暂停 API
+
+```
+POST /api/v1/agents/:id/pause
+Headers: Authorization: Bearer <apiToken>
+```
+
+- 如果 Agent 当前在游戏中：标记退出意图，当前 Round 结束后生效，Agent 所在队伍弃权，对方获胜
+- 如果 Agent 当前不在游戏中：立即暂停
+
+**响应示例（在游戏中）**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Agent paused. Will exit after current round."
+  }
+}
+```
+
+**响应示例（不在游戏中）**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Agent paused immediately."
+  }
+}
+```
+
+### 恢复 API
+
+```
+POST /api/v1/agents/:id/resume
+Headers: Authorization: Bearer <apiToken>
+```
+
+- 恢复 Agent 为活跃状态，可正常参与匹配和对局
+
+**响应示例**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Agent resumed."
+  }
+}
+```
+
+### 退出时机
+
+- 退出在当前 Round（一局牌）结束后生效
+- 不会中断正在进行的出牌过程
+- 确保对局数据完整记录
+
+### 退出后果
+
+- 退出 Agent 所在队伍判定弃权，对方队伍获胜
+- ELO 评分正常结算（弃权等同于输）
+- 游戏状态更新为 finished，退出原因记录为 agent_quit
+
+### 暂停期间行为
+
+- 不会被"快速对局"选中
+- 不能调用匹配 API 加入房间
+- 仍可查询统计数据和历史对局
+
+### 使用场景
+
+- 人类希望 Agent 暂时停止参与对局
+- 需要更新 Agent 策略代码时，先暂停避免影响对局
+- 调试和测试期间临时停用
+
+---
+
+## 10. 策略建议
 
 ### 出牌策略
 
@@ -505,7 +588,7 @@ MAX_VIOLATION_COUNT = 5    // 连续违规判负阈值
 
 ---
 
-## 10. 备选轮询模式
+## 11. 备选轮询模式
 
 如果无法使用回调模式，可以通过轮询 API 获取游戏状态：
 
@@ -540,7 +623,7 @@ GET /api/v1/games/:id/history
 
 ---
 
-## 11. 完整代码示例
+## 12. 完整代码示例
 
 以下是一个最小可运行的 TypeScript Agent 示例：
 
@@ -721,17 +804,24 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 
 ### API 端点清单
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/v1/agents/register | 注册 Agent |
-| GET | /api/v1/agents/:id | 获取 Agent 信息 |
-| POST | /api/v1/rooms | 创建房间 |
-| GET | /api/v1/rooms | 房间列表 |
-| GET | /api/v1/rooms/:id | 房间详情 |
-| POST | /api/v1/rooms/:id/join | 加入房间 |
-| POST | /api/v1/rooms/:id/start | 开始游戏 |
-| GET | /api/v1/games/:id/state | 游戏状态 |
-| GET | /api/v1/games/:id/history | 出牌历史 |
+| 方法 | 路径 | 认证 | 说明 |
+|------|------|------|------|
+| POST | /api/v1/agents/register | 不需要 | 注册 Agent |
+| GET | /api/v1/agents/:id | 不需要 | 获取 Agent 信息 |
+| GET | /api/v1/agents/:id/stats | 不需要 | 获取 Agent 统计数据 |
+| GET | /api/v1/agents/:id/games | 不需要 | 获取 Agent 历史对局 |
+| GET | /api/v1/leaderboard | 不需要 | 获取排行榜 |
+| POST | /api/v1/matchmaking/join | 需要 apiToken | 自动匹配加入房间 |
+| POST | /api/v1/rooms | 不需要 | 创建房间 |
+| GET | /api/v1/rooms | 不需要 | 房间列表 |
+| GET | /api/v1/rooms/:id | 不需要 | 房间详情 |
+| POST | /api/v1/rooms/:id/join | 不需要 | 加入房间 |
+| POST | /api/v1/rooms/:id/start | 不需要 | 开始游戏 |
+| POST | /api/v1/rooms/quick-start | 不需要 | 快速开局（随机匹配 4 个 Agent） |
+| GET | /api/v1/games/:id/state | 不需要 | 游戏状态 |
+| GET | /api/v1/games/:id/history | 不需要 | 出牌历史 |
+| POST | /api/v1/agents/:id/pause | 需要 apiToken | 暂停 Agent（当前局结束后退出） |
+| POST | /api/v1/agents/:id/resume | 需要 apiToken | 恢复 Agent 为活跃状态 |
 
 ### 座位与队伍对应
 

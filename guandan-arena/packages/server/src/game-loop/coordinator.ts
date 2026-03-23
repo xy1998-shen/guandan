@@ -23,6 +23,7 @@ import {
   updateRound,
   savePlay,
   updateGameStatus,
+  updateTrickWinner,
   type LevelChange,
 } from '../services/game.js';
 import { deleteRoom, updateRoomStatus } from '../services/room.js';
@@ -62,8 +63,47 @@ export class GameCoordinator {
   // 当前回合 ID（用于记录出牌）
   private currentRoundIds: Map<string, string> = new Map(); // roomId -> roundId
 
+  // 记录每个 trick 中的出牌 ID，用于更新 trick_winner
+  private trickPlayIds: Map<string, Map<number, { playId: string; seat: Seat }[]>> = new Map(); // roomId -> (trickNumber -> plays)
+
+  // 退出请求管理
+  private pendingQuits: Map<string, string> = new Map(); // roomId -> agentId
+
   constructor(client?: AgentClient) {
     this.agentClient = client || agentClient;
+  }
+
+  /**
+   * 请求 Agent 在当前 Round 结束后退出游戏
+   * @param roomId 房间 ID
+   * @param agentId 请求退出的 Agent ID
+   */
+  public requestQuit(roomId: string, agentId: string): void {
+    // 如果已有退出请求，只处理先到的
+    if (!this.pendingQuits.has(roomId)) {
+      this.pendingQuits.set(roomId, agentId);
+      console.log(`[Coordinator] Agent ${agentId} requested quit for room ${roomId}`);
+    } else {
+      console.log(`[Coordinator] Agent ${agentId} quit request ignored - room ${roomId} already has pending quit`);
+    }
+  }
+
+  /**
+   * 清除房间的退出请求
+   * @param roomId 房间 ID
+   */
+  public clearQuit(roomId: string): void {
+    this.pendingQuits.delete(roomId);
+    console.log(`[Coordinator] Cleared quit request for room ${roomId}`);
+  }
+
+  /**
+   * 检查房间是否有待处理的退出请求
+   * @param roomId 房间 ID
+   * @returns 请求退出的 Agent ID，或 null
+   */
+  private checkPendingQuit(roomId: string): string | null {
+    return this.pendingQuits.get(roomId) || null;
   }
 
   /**
@@ -162,6 +202,9 @@ export class GameCoordinator {
         // 记录当前 trick 编号
         let trickNumber = 1;
 
+        // 初始化当前房间的 trick play 记录
+        this.trickPlayIds.set(roomId, new Map());
+
         // 2. 出牌循环
         while (true) {
           const currentSeat = round.getCurrentSeat();
@@ -169,6 +212,8 @@ export class GameCoordinator {
           // 如果为 null，本局结束
           if (currentSeat === null) {
             console.log(`[Coordinator] Round ${roundNumber} ended`);
+            // 回填最后一个 trick 的 winner
+            await this.updateTrickWinnerRecord(roomId, trickNumber);
             break;
           }
 
@@ -185,10 +230,14 @@ export class GameCoordinator {
           if (this.disconnectedAgents.has(playerInfo.agentId)) {
             console.log(`[Coordinator] Agent ${playerInfo.agentName} is disconnected, auto PASS`);
             
+            // 获取出牌前手牌数量
+            const player = round.state.players.find((p: PlayerState) => p.seat === currentSeat);
+            const handCountBefore = player?.hand.length ?? 0;
+            const isLeading = round.isLeading();
+            
             // 首出时不能 PASS，必须出最小的牌
-            if (round.isLeading()) {
+            if (isLeading) {
               // 找到手牌中的一张牌强制出
-              const player = round.state.players.find((p: PlayerState) => p.seat === currentSeat);
               if (player && player.hand.length > 0) {
                 const card = player.hand[0];
                 const combo: Combo = {
@@ -198,13 +247,20 @@ export class GameCoordinator {
                 };
                 const result = round.play(currentSeat, combo);
                 if (result.valid) {
-                  await savePlay(
+                  const playId = await savePlay(
                     this.currentRoundIds.get(roomId) || '',
                     trickNumber,
                     currentSeat,
                     ComboType.SINGLE,
-                    [card]
+                    [card],
+                    {
+                      isAutoPlay: true,
+                      isLeading: true,
+                      handCountBefore,
+                    }
                   );
+                  // 记录该 trick 的出牌
+                  this.recordTrickPlay(roomId, trickNumber, playId, currentSeat);
                   this.broadcast(roomId, {
                     event: 'play',
                     data: { seat: currentSeat, combo, auto: true },
@@ -241,7 +297,12 @@ export class GameCoordinator {
                 trickNumber,
                 currentSeat,
                 ComboType.PASS,
-                []
+                [],
+                {
+                  isAutoPlay: true,
+                  isLeading: false,
+                  handCountBefore,
+                }
               );
               this.broadcast(roomId, {
                 event: 'pass',
@@ -256,6 +317,11 @@ export class GameCoordinator {
           // 构建 GameStateView
           const view = this.buildGameStateView(game, currentSeat);
 
+          // 获取出牌前手牌数量和是否首出
+          const currentPlayer = round.state.players.find((p: PlayerState) => p.seat === currentSeat);
+          const handCountBefore = currentPlayer?.hand.length ?? 0;
+          const isLeadingPlay = round.isLeading();
+
           // 广播当前回合出牌计时
           this.broadcast(roomId, {
             event: 'turn_start',
@@ -267,11 +333,17 @@ export class GameCoordinator {
             },
           });
 
+          // 记录请求开始时间
+          const requestStartTime = Date.now();
+
           // 请求 Agent 出牌
           const { response, timedOut } = await this.agentClient.requestPlay(
             playerInfo.callbackUrl,
             view
           );
+
+          // 计算响应时间
+          const responseTimeMs = Date.now() - requestStartTime;
 
           // 处理超时
           if (timedOut) {
@@ -292,6 +364,7 @@ export class GameCoordinator {
           // 处理响应
           let playResult: { valid: boolean; reason?: string } = { valid: false };
           let playedCombo: Combo | null = null;
+          let isForcePlay = false; // 标记是否为强制出牌（违规导致）
 
           if (response.action === 'pass') {
             // PASS
@@ -333,6 +406,7 @@ export class GameCoordinator {
                 playResult = round.play(currentSeat, combo);
                 if (playResult.valid) {
                   playedCombo = combo;
+                  isForcePlay = true;
                 }
               }
             } else {
@@ -377,6 +451,7 @@ export class GameCoordinator {
                 playResult = round.pass(currentSeat);
                 if (playResult.valid) {
                   playedCombo = { type: ComboType.PASS, cards: [] };
+                  isForcePlay = true;
                 }
               } else {
                 // 首出强制出单张
@@ -391,6 +466,7 @@ export class GameCoordinator {
                   playResult = round.play(currentSeat, combo);
                   if (playResult.valid) {
                     playedCombo = combo;
+                    isForcePlay = true;
                   }
                 }
               }
@@ -429,6 +505,7 @@ export class GameCoordinator {
                   playResult = round.pass(currentSeat);
                   if (playResult.valid) {
                     playedCombo = { type: ComboType.PASS, cards: [] };
+                    isForcePlay = true;
                   }
                 } else {
                   const player = round.state.players.find((p: PlayerState) => p.seat === currentSeat);
@@ -442,6 +519,7 @@ export class GameCoordinator {
                     playResult = round.play(currentSeat, combo);
                     if (playResult.valid) {
                       playedCombo = combo;
+                      isForcePlay = true;
                     }
                   }
                 }
@@ -450,14 +528,25 @@ export class GameCoordinator {
           }
 
           // 记录出牌到数据库
+          let savedPlayId: string | null = null;
           if (playedCombo && this.currentRoundIds.get(roomId)) {
-            await savePlay(
+            savedPlayId = await savePlay(
               this.currentRoundIds.get(roomId)!,
               trickNumber,
               currentSeat,
               playedCombo.type,
-              playedCombo.cards
+              playedCombo.cards,
+              {
+                responseTimeMs: timedOut ? undefined : responseTimeMs,
+                handCountBefore,
+                isAutoPlay: timedOut || isForcePlay,
+                isLeading: isLeadingPlay,
+              }
             );
+            // 记录该 trick 的出牌（非 PASS）
+            if (playedCombo.type !== ComboType.PASS) {
+              this.recordTrickPlay(roomId, trickNumber, savedPlayId, currentSeat);
+            }
           }
 
           // 广播出牌事件
@@ -489,6 +578,9 @@ export class GameCoordinator {
 
           // 更新 trickNumber（如果开始了新的 trick）
           if (round.state.currentTrick && round.state.currentTrick.plays.length === 0) {
+            // 新 trick 开始，说明上一个 trick 已结束
+            // 更新上一个 trick 的 winner
+            await this.updateTrickWinnerRecord(roomId, trickNumber);
             trickNumber++;
           }
 
@@ -552,7 +644,7 @@ export class GameCoordinator {
           // 积分更新失败不影响游戏主流程
         }
 
-        // 广播 round_end
+        // 广播round_end
         this.broadcast(roomId, {
           event: 'round_end',
           data: {
@@ -566,18 +658,108 @@ export class GameCoordinator {
           },
         });
 
+        // 检查是否有 Agent 请求退出（在游戏还没有正常结束时）
+        const quitAgentId = this.checkPendingQuit(roomId);
+        if (quitAgentId && !endResult.gameOver) {
+          // 确定退出 Agent 的队伍
+          const playerMapForQuit = this.playerInfoMap.get(roomId);
+          if (playerMapForQuit) {
+            let quitTeam: Team | null = null;
+            for (const player of playerMapForQuit.values()) {
+              if (player.agentId === quitAgentId) {
+                quitTeam = player.team;
+                break;
+              }
+            }
+
+            if (quitTeam) {
+              const winnerTeam: Team = quitTeam === 'A' ? 'B' : 'A';
+              console.log(`[Coordinator] Game ended due to agent quit. Agent ${quitAgentId} (Team ${quitTeam}) forfeited. Winner: Team ${winnerTeam}`);
+
+              // 更新排行榜（弃权 = 输）
+              try {
+                const teamAAgentIds: string[] = [];
+                const teamBAgentIds: string[] = [];
+                const seatToAgentId = new Map<number, string>();
+
+                for (const player of playerMapForQuit.values()) {
+                  seatToAgentId.set(player.seat, player.agentId);
+                  if (player.team === 'A') {
+                    teamAAgentIds.push(player.agentId);
+                  } else {
+                    teamBAgentIds.push(player.agentId);
+                  }
+                }
+
+                await updateLeaderboardAfterGame({
+                  gameId,
+                  winningTeam: winnerTeam,
+                  teamAAgentIds,
+                  teamBAgentIds,
+                  seatToAgentId,
+                });
+                console.log(`[Coordinator] Leaderboard updated after forfeit - Winner: Team ${winnerTeam}`);
+              } catch (error) {
+                console.error(`[Coordinator] Failed to update leaderboard after forfeit:`, error);
+              }
+
+              // 更新游戏和房间状态
+              await updateRoomStatus(roomId, 'finished');
+              await updateGameStatus(
+                gameId,
+                'finished',
+                winnerTeam,
+                game.getState().teamALevel,
+                game.getState().teamBLevel
+              );
+
+              // 广播游戏因弃权结束
+              this.broadcast(roomId, {
+                event: 'game_end',
+                data: {
+                  winner: winnerTeam,
+                  reason: 'agent_quit',
+                  quitAgent: quitAgentId,
+                },
+              });
+
+              // 清理
+              this.pendingQuits.delete(roomId);
+
+              // 延迟 10 秒后清理房间
+              console.log(`[Coordinator] Room ${roomId} will be cleaned up in 10 seconds after forfeit...`);
+              setTimeout(async () => {
+                try {
+                  await deleteRoom(roomId);
+                  console.log(`[Coordinator] Room ${roomId} has been deleted after forfeit`);
+                } catch (error) {
+                  console.error(`[Coordinator] Failed to delete room ${roomId}:`, error);
+                }
+              }, 10000);
+
+              this.cleanup(roomId);
+              return;
+            }
+          }
+        }
+
+        // 清理正常结束时的 pendingQuit 记录
+        this.pendingQuits.delete(roomId);
+
         // 检查游戏是否结束
         if (endResult.gameOver) {
           console.log(`[Coordinator] Game ended! Winner: Team ${endResult.winner}`);
           
-          // 更新排行榜（ELO + 胜负统计）
+          // 更新排行榜（ELO + 胜负统计 + 新增统计字段）
           try {
             const playerMapForLeaderboard = this.playerInfoMap.get(roomId);
             if (playerMapForLeaderboard) {
               const teamAAgentIds: string[] = [];
               const teamBAgentIds: string[] = [];
+              const seatToAgentId = new Map<number, string>();
 
               for (const player of playerMapForLeaderboard.values()) {
+                seatToAgentId.set(player.seat, player.agentId);
                 if (player.team === 'A') {
                   teamAAgentIds.push(player.agentId);
                 } else {
@@ -586,9 +768,11 @@ export class GameCoordinator {
               }
 
               await updateLeaderboardAfterGame({
+                gameId,
                 winningTeam: endResult.winner!,
                 teamAAgentIds,
                 teamBAgentIds,
+                seatToAgentId,
               });
               console.log(`[Coordinator] Leaderboard updated - Winner: Team ${endResult.winner}, Team A: [${teamAAgentIds.join(', ')}], Team B: [${teamBAgentIds.join(', ')}]`);
             }
@@ -716,6 +900,78 @@ export class GameCoordinator {
   }
 
   /**
+   * 记录 trick 中的出牌
+   * @param roomId 房间 ID
+   * @param trickNumber trick 编号
+   * @param playId 出牌记录 ID
+   * @param seat 座位号
+   */
+  private recordTrickPlay(roomId: string, trickNumber: number, playId: string, seat: Seat): void {
+    let roomTricks = this.trickPlayIds.get(roomId);
+    if (!roomTricks) {
+      roomTricks = new Map();
+      this.trickPlayIds.set(roomId, roomTricks);
+    }
+    let trickPlays = roomTricks.get(trickNumber);
+    if (!trickPlays) {
+      trickPlays = [];
+      roomTricks.set(trickNumber, trickPlays);
+    }
+    trickPlays.push({ playId, seat });
+  }
+
+  /**
+   * 更新 trick winner 记录
+   * @param roomId 房间 ID
+   * @param trickNumber trick 编号
+   */
+  private async updateTrickWinnerRecord(roomId: string, trickNumber: number): Promise<void> {
+    const game = this.activeGames.get(roomId);
+    if (!game || !game.currentRound) return;
+
+    const round = game.currentRound;
+    const trickHistory = round.state.trickHistory;
+    
+    // 找到对应的历史 trick（trickHistory 是以前所有 trick 的记录）
+    const trick = trickHistory[trickNumber - 1]; // trickNumber 从 1 开始，数组从 0 开始
+    if (!trick || !trick.plays || trick.plays.length === 0) return;
+
+    // 找到 trick 中最后一个非 PASS 的出牌，该玩家就是赢家
+    let winnerSeat: Seat | null = null;
+    for (let i = trick.plays.length - 1; i >= 0; i--) {
+      const play = trick.plays[i];
+      if (play.combo.type !== ComboType.PASS) {
+        winnerSeat = play.seat;
+        break;
+      }
+    }
+
+    if (winnerSeat === null) return;
+
+    const roomTricks = this.trickPlayIds.get(roomId);
+    if (!roomTricks) return;
+
+    const trickPlays = roomTricks.get(trickNumber);
+    if (!trickPlays) return;
+
+    // 找到赢家的出牌记录并更新
+    for (const play of trickPlays) {
+      if (play.seat === winnerSeat) {
+        try {
+          await updateTrickWinner(play.playId);
+          console.log(`[Coordinator] Updated trick_winner for play ${play.playId}, seat ${winnerSeat}`);
+        } catch (error) {
+          console.error(`[Coordinator] Failed to update trick_winner:`, error);
+        }
+        break;
+      }
+    }
+
+    // 清理该 trick 的记录
+    roomTricks.delete(trickNumber);
+  }
+
+  /**
    * 停止游戏
    */
   stopGame(roomId: string): void {
@@ -740,6 +996,8 @@ export class GameCoordinator {
 
     this.playerInfoMap.delete(roomId);
     this.currentRoundIds.delete(roomId);
+    this.trickPlayIds.delete(roomId);
+    this.pendingQuits.delete(roomId);
     
     // 清理旁观者连接
     spectatorManager.cleanRoom(roomId);

@@ -1,7 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { registerAgent, getAgent, listAgentsByOwner } from '../services/agent.js';
+import { registerAgent, getAgent, listAgentsByOwner, pauseAgent, resumeAgent, getAgentActiveRoom, getAgentByToken } from '../services/agent.js';
+import { coordinator } from '../game-loop/coordinator.js';
+import { authMiddleware } from '../middleware/auth.js';
 import { db, schema } from '../db/index.js';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { AppError } from '../middleware/error.js';
 import type { ApiResponse, RegisterAgentRequest, RegisterAgentResponse } from '@guandan/shared';
 
@@ -104,6 +106,7 @@ router.get('/:id/stats', async (req: Request, res: Response, next: NextFunction)
       throw new AppError('Agent not found', 404);
     }
 
+    // 查询 leaderboard 表获取基础统计（包含新增字段）
     const leader = await db
       .select({
         gamesPlayed: schema.leaderboard.gamesPlayed,
@@ -111,6 +114,11 @@ router.get('/:id/stats', async (req: Request, res: Response, next: NextFunction)
         roundsPlayed: schema.leaderboard.roundsPlayed,
         roundsWon: schema.leaderboard.roundsWon,
         eloRating: schema.leaderboard.eloRating,
+        // 新增统计字段
+        avgResponseTimeMs: schema.leaderboard.avgResponseTimeMs,
+        bombTotal: schema.leaderboard.bombTotal,
+        bombSuccess: schema.leaderboard.bombSuccess,
+        riskScore: schema.leaderboard.riskScore,
       })
       .from(schema.leaderboard)
       .where(eq(schema.leaderboard.agentId, id))
@@ -173,6 +181,103 @@ router.get('/:id/stats', async (req: Request, res: Response, next: NextFunction)
       }
     }
 
+    // === 新增统计维度 ===
+
+    // A. 牌型偏好分布 (comboTypeDistribution)
+    // 查询该 Agent 所有出牌记录，按 combo_type 分组统计
+    const comboTypeRows = await db
+      .select({
+        comboType: schema.plays.comboType,
+        count: sql<number>`count(*)`,
+      })
+      .from(schema.plays)
+      .innerJoin(schema.rounds, eq(schema.plays.roundId, schema.rounds.id))
+      .innerJoin(schema.games, eq(schema.rounds.gameId, schema.games.id))
+      .innerJoin(
+        schema.roomSeats,
+        sql`${schema.roomSeats.roomId} = ${schema.games.roomId} AND ${schema.roomSeats.seat} = ${schema.plays.seat}`
+      )
+      .where(
+        and(
+          eq(schema.roomSeats.agentId, id),
+          eq(schema.games.status, 'finished'),
+          ne(schema.plays.comboType, 'PASS')
+        )
+      )
+      .groupBy(schema.plays.comboType)
+      .orderBy(desc(sql<number>`count(*)`));
+
+    const totalPlays = comboTypeRows.reduce((sum, row) => sum + Number(row.count), 0);
+    const comboTypeDistribution = comboTypeRows.map((row) => ({
+      comboType: row.comboType,
+      count: Number(row.count),
+      percentage: totalPlays > 0 ? Number(row.count) / totalPlays : 0,
+    }));
+
+    // B. 炸弹命中率 (bombStats)
+    const bombTotal = leader[0]?.bombTotal ?? 0;
+    const bombSuccess = leader[0]?.bombSuccess ?? 0;
+    const bombStats = {
+      bombTotal,
+      bombSuccess,
+      bombSuccessRate: bombTotal > 0 ? bombSuccess / bombTotal : 0,
+    };
+
+    // C. 队友配合胜率 (teammateStats)
+    const teammateRows = await db
+      .select({
+        teammateId: schema.teammateStats.teammateId,
+        teammateName: schema.agents.name,
+        gamesPlayed: schema.teammateStats.gamesPlayed,
+        gamesWon: schema.teammateStats.gamesWon,
+        winRate: schema.teammateStats.winRate,
+      })
+      .from(schema.teammateStats)
+      .innerJoin(schema.agents, eq(schema.agents.id, schema.teammateStats.teammateId))
+      .where(eq(schema.teammateStats.agentId, id));
+
+    const teammateStats = teammateRows.map((row) => ({
+      teammate: row.teammateId,
+      teammateName: row.teammateName,
+      gamesPlayed: row.gamesPlayed ?? 0,
+      gamesWon: row.gamesWon ?? 0,
+      winRate: row.winRate ?? 0,
+    }));
+
+    // D. 出牌响应时间 (responseTimeStats)
+    // 从 plays 表动态计算详细响应时间统计
+    const responseTimeRows = await db
+      .select({
+        responseTimeMs: schema.plays.responseTimeMs,
+      })
+      .from(schema.plays)
+      .innerJoin(schema.rounds, eq(schema.plays.roundId, schema.rounds.id))
+      .innerJoin(schema.games, eq(schema.rounds.gameId, schema.games.id))
+      .innerJoin(
+        schema.roomSeats,
+        sql`${schema.roomSeats.roomId} = ${schema.games.roomId} AND ${schema.roomSeats.seat} = ${schema.plays.seat}`
+      )
+      .where(
+        and(
+          eq(schema.roomSeats.agentId, id),
+          eq(schema.games.status, 'finished')
+        )
+      );
+
+    const validResponseTimes = responseTimeRows
+      .map((r) => r.responseTimeMs)
+      .filter((t): t is number => t !== null && t > 0);
+
+    const responseTimeStats = {
+      avgResponseTimeMs: leader[0]?.avgResponseTimeMs ?? 0,
+      minResponseTimeMs: validResponseTimes.length > 0 ? Math.min(...validResponseTimes) : 0,
+      maxResponseTimeMs: validResponseTimes.length > 0 ? Math.max(...validResponseTimes) : 0,
+      totalPlays: validResponseTimes.length,
+    };
+
+    // E. 风险偏好评分 (riskScore)
+    const riskScore = leader[0]?.riskScore ?? 0;
+
     const response: ApiResponse<{
       agentId: string;
       agentName: string;
@@ -185,6 +290,12 @@ router.get('/:id/stats', async (req: Request, res: Response, next: NextFunction)
       roundWinRate: number;
       eloTrend: number[];
       opponents: Array<{ opponent: string; games: number; wins: number; winRate: number }>;
+      // 新增统计维度
+      comboTypeDistribution: Array<{ comboType: string; count: number; percentage: number }>;
+      bombStats: { bombTotal: number; bombSuccess: number; bombSuccessRate: number };
+      teammateStats: Array<{ teammate: string; teammateName: string; gamesPlayed: number; gamesWon: number; winRate: number }>;
+      responseTimeStats: { avgResponseTimeMs: number; minResponseTimeMs: number; maxResponseTimeMs: number; totalPlays: number };
+      riskScore: number;
     }> = {
       success: true,
       data: {
@@ -204,6 +315,12 @@ router.get('/:id/stats', async (req: Request, res: Response, next: NextFunction)
           wins: value.wins,
           winRate: value.games > 0 ? value.wins / value.games : 0,
         })),
+        // 新增统计维度
+        comboTypeDistribution,
+        bombStats,
+        teammateStats,
+        responseTimeStats,
+        riskScore,
       },
     };
     res.json(response);
@@ -314,6 +431,113 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       },
     };
 
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/agents/:id/pause
+ * 暂停 Agent（设置 active=0，如果在游戏中则等当前 round 结束后弃权）
+ */
+router.post('/:id/pause', authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // 验证认证的 agent 与请求的 id 匹配
+    if (!req.agent || req.agent.id !== id) {
+      throw new AppError('Agent ID must match authenticated agent', 403);
+    }
+
+    // 验证 agent 存在且 active=1
+    const agent = await getAgent(id);
+    if (!agent) {
+      throw new AppError('Agent not found', 404);
+    }
+    if (!agent.active) {
+      throw new AppError('Agent is already paused', 400);
+    }
+
+    // 检查 agent 是否在进行中的游戏中
+    const activeRoomId = await getAgentActiveRoom(id);
+
+    if (activeRoomId) {
+      // 在游戏中：调用 GameCoordinator 的 requestQuit 方法标记退出意图
+      coordinator.requestQuit(activeRoomId, id);
+      // 设置 active=0
+      await pauseAgent(id);
+
+      const response: ApiResponse<{ message: string }> = {
+        success: true,
+        data: { message: 'Agent paused. Will exit after current round.' },
+      };
+      res.json(response);
+    } else {
+      // 不在游戏中：直接设置 active=0
+      await pauseAgent(id);
+
+      const response: ApiResponse<{ message: string }> = {
+        success: true,
+        data: { message: 'Agent paused immediately.' },
+      };
+      res.json(response);
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/agents/:id/resume
+ * 恢复 Agent（设置 active=1）
+ * 注意：由于 authMiddleware 会拒绝 inactive agent，这里需要手动验证 token
+ */
+router.post('/:id/resume', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // 手动验证 token（因为 authMiddleware 会拒绝 inactive agent）
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AppError('Missing or invalid Authorization header', 401);
+    }
+    const token = authHeader.slice(7);
+    if (!token || !token.startsWith('gd_')) {
+      throw new AppError('Invalid token format', 401);
+    }
+
+    // 根据 token 查询 agent
+    const tokenAgent = await getAgentByToken(token);
+    if (!tokenAgent) {
+      throw new AppError('Invalid or expired token', 401);
+    }
+
+    // 验证认证的 agent 与请求的 id 匹配
+    if (tokenAgent.id !== id) {
+      throw new AppError('Agent ID must match authenticated agent', 403);
+    }
+
+    // 验证 agent 存在
+    const agent = await getAgent(id);
+    if (!agent) {
+      throw new AppError('Agent not found', 404);
+    }
+
+    // 设置 active=1
+    await resumeAgent(id);
+
+    // 清除 GameCoordinator 中可能残留的 pendingQuit 标记
+    // 由于我们不知道 agent 可能在哪个房间，需要先查询
+    const activeRoomId = await getAgentActiveRoom(id);
+    if (activeRoomId) {
+      coordinator.clearQuit(activeRoomId);
+    }
+
+    const response: ApiResponse<{ message: string }> = {
+      success: true,
+      data: { message: 'Agent resumed.' },
+    };
     res.json(response);
   } catch (error) {
     next(error);

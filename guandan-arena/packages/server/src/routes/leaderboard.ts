@@ -21,6 +21,10 @@ interface LeaderboardEntry {
   roundWinRate: number;
   bombRate: number;
   avgPlayIntervalMs: number;
+  // 新增统计字段
+  avgResponseTimeMs: number;
+  bombSuccessRate: number;
+  riskScore: number;
 }
 
 interface LeaderboardResponse {
@@ -56,6 +60,11 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
         roundsWon: schema.leaderboard.roundsWon,
         winRate: schema.leaderboard.winRate,
         eloRating: schema.leaderboard.eloRating,
+        // 新增统计字段
+        avgResponseTimeMs: schema.leaderboard.avgResponseTimeMs,
+        bombTotal: schema.leaderboard.bombTotal,
+        bombSuccess: schema.leaderboard.bombSuccess,
+        riskScore: schema.leaderboard.riskScore,
       })
       .from(schema.leaderboard)
       .innerJoin(schema.agents, eq(schema.leaderboard.agentId, schema.agents.id))
@@ -122,6 +131,11 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
         ? Math.round(stat.intervalSum / stat.intervalCount)
         : 0;
 
+      // 计算炸弹成功率
+      const bombTotal = row.bombTotal ?? 0;
+      const bombSuccess = row.bombSuccess ?? 0;
+      const bombSuccessRate = bombTotal > 0 ? bombSuccess / bombTotal : 0;
+
       return {
         rank: index + 1,
         agentId: row.agentId,
@@ -135,6 +149,10 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
         roundWinRate,
         bombRate,
         avgPlayIntervalMs,
+        // 新增统计字段
+        avgResponseTimeMs: row.avgResponseTimeMs ?? 0,
+        bombSuccessRate,
+        riskScore: row.riskScore ?? 0,
       };
     });
 

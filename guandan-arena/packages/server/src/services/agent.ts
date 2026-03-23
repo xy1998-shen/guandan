@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { agents, leaderboard } from '../db/schema.js';
+import { agents, leaderboard, roomSeats, rooms, games } from '../db/schema.js';
 import type { Agent } from '@guandan/shared';
 
 /**
@@ -146,4 +146,51 @@ export async function listActiveAgents(): Promise<Agent[]> {
     createdAt: agent.createdAt,
     active: agent.active === 1,
   }));
+}
+
+/**
+ * 暂停 Agent（设置 active=0）
+ * @param agentId Agent ID
+ */
+export async function pauseAgent(agentId: string): Promise<void> {
+  await db
+    .update(agents)
+    .set({ active: 0 })
+    .where(eq(agents.id, agentId));
+}
+
+/**
+ * 恢复 Agent（设置 active=1）
+ * @param agentId Agent ID
+ */
+export async function resumeAgent(agentId: string): Promise<void> {
+  await db
+    .update(agents)
+    .set({ active: 1 })
+    .where(eq(agents.id, agentId));
+}
+
+/**
+ * 获取 Agent 当前所在的 playing 状态房间（如果有的话）
+ * @param agentId Agent ID
+ * @returns 房间 ID 或 null
+ */
+export async function getAgentActiveRoom(agentId: string): Promise<string | null> {
+  // 查询 agent 是否在某个 playing 状态的房间中
+  const result = await db
+    .select({
+      roomId: roomSeats.roomId,
+    })
+    .from(roomSeats)
+    .innerJoin(rooms, eq(rooms.id, roomSeats.roomId))
+    .innerJoin(games, eq(games.roomId, roomSeats.roomId))
+    .where(
+      and(
+        eq(roomSeats.agentId, agentId),
+        eq(games.status, 'playing')
+      )
+    )
+    .limit(1);
+
+  return result.length > 0 ? result[0].roomId : null;
 }

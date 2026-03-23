@@ -179,20 +179,33 @@ export async function updateRound(
 }
 
 /**
+ * 出牌记录的额外参数
+ */
+export interface SavePlayOptions {
+  responseTimeMs?: number; // Agent 出牌响应时间（毫秒）
+  handCountBefore?: number; // 出牌前手牌数量
+  isAutoPlay?: boolean; // 是否自动出牌（掉线/超时）
+  isLeading?: boolean; // 是否为首出
+}
+
+/**
  * 记录出牌
  * @param roundId 回合 ID
  * @param trickNumber Trick 编号
  * @param seat 座位号
  * @param comboType 牌型
  * @param cards 牌
+ * @param options 额外参数
+ * @returns playId
  */
 export async function savePlay(
   roundId: string,
   trickNumber: number,
   seat: number,
   comboType: string,
-  cards: Card[]
-): Promise<void> {
+  cards: Card[],
+  options?: SavePlayOptions
+): Promise<string> {
   const playId = crypto.randomUUID();
 
   await db.insert(plays).values({
@@ -203,5 +216,90 @@ export async function savePlay(
     comboType,
     cards: JSON.stringify(cards),
     timestamp: Date.now(),
+    responseTimeMs: options?.responseTimeMs ?? null,
+    handCountBefore: options?.handCountBefore ?? null,
+    isAutoPlay: options?.isAutoPlay ? 1 : 0,
+    isLeading: options?.isLeading ? 1 : 0,
+    trickWinner: 0, // 默认为0，待 trick 结束后更新
   });
+
+  return playId;
+}
+
+/**
+ * 更新 trick winner 标记
+ * @param playId 出牌记录 ID
+ */
+export async function updateTrickWinner(playId: string): Promise<void> {
+  await db
+    .update(plays)
+    .set({ trickWinner: 1 })
+    .where(eq(plays.id, playId));
+}
+
+/**
+ * 获取某局游戏某个座位的所有出牌记录
+ * @param gameId 游戏 ID
+ * @param seat 座位号
+ */
+export async function getPlaysForSeatInGame(
+  gameId: string,
+  seat: number
+): Promise<{
+  id: string;
+  comboType: string;
+  responseTimeMs: number | null;
+  handCountBefore: number | null;
+  isLeading: number | null;
+  trickWinner: number | null;
+}[]> {
+  // 先获取该游戏的所有 round
+  const roundsResult = await db
+    .select({ id: rounds.id })
+    .from(rounds)
+    .where(eq(rounds.gameId, gameId));
+
+  if (roundsResult.length === 0) {
+    return [];
+  }
+
+  const result: {
+    id: string;
+    comboType: string;
+    responseTimeMs: number | null;
+    handCountBefore: number | null;
+    isLeading: number | null;
+    trickWinner: number | null;
+  }[] = [];
+
+  // 查询每个 round 中该座位的出牌记录
+  for (const round of roundsResult) {
+    const playsResult = await db
+      .select({
+        id: plays.id,
+        comboType: plays.comboType,
+        responseTimeMs: plays.responseTimeMs,
+        handCountBefore: plays.handCountBefore,
+        isLeading: plays.isLeading,
+        trickWinner: plays.trickWinner,
+        seat: plays.seat,
+      })
+      .from(plays)
+      .where(eq(plays.roundId, round.id));
+
+    for (const play of playsResult) {
+      if (play.seat === seat) {
+        result.push({
+          id: play.id,
+          comboType: play.comboType,
+          responseTimeMs: play.responseTimeMs,
+          handCountBefore: play.handCountBefore,
+          isLeading: play.isLeading,
+          trickWinner: play.trickWinner,
+        });
+      }
+    }
+  }
+
+  return result;
 }

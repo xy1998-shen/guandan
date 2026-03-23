@@ -39,11 +39,48 @@ export interface LeaderboardEntry {
   roundWinRate: number;
   bombRate: number;
   avgPlayIntervalMs: number;
+  // 新增统计字段
+  avgResponseTimeMs: number;  // 平均出牌响应时间（毫秒）
+  bombSuccessRate: number;    // 炸弹命中率（0-1）
+  riskScore: number;          // 风险偏好评分（0-100）
 }
 
 export interface LeaderboardResponse {
   entries: LeaderboardEntry[];
   todayGames: number;
+}
+
+// ========== Agent Stats Types ==========
+
+/** 牌型偏好分布 */
+export interface ComboTypeDistributionItem {
+  comboType: string;
+  count: number;
+  percentage: number;
+}
+
+/** 炸弹统计 */
+export interface BombStats {
+  bombTotal: number;
+  bombSuccess: number;
+  bombSuccessRate: number;
+}
+
+/** 队友配合统计 */
+export interface TeammateStatsItem {
+  teammate: string;
+  teammateName: string;
+  gamesPlayed: number;
+  gamesWon: number;
+  winRate: number;
+}
+
+/** 响应时间统计 */
+export interface ResponseTimeStats {
+  avgResponseTimeMs: number;
+  minResponseTimeMs: number;
+  maxResponseTimeMs: number;
+  totalPlays: number;
 }
 
 export interface AgentStatsResponse {
@@ -58,6 +95,12 @@ export interface AgentStatsResponse {
   roundWinRate: number;
   eloTrend: number[];
   opponents: Array<{ opponent: string; games: number; wins: number; winRate: number }>;
+  // 新增统计字段
+  comboTypeDistribution: ComboTypeDistributionItem[];  // 牌型偏好分布
+  bombStats: BombStats;                                 // 炸弹统计
+  teammateStats: TeammateStatsItem[];                   // 队友配合
+  responseTimeStats: ResponseTimeStats;                 // 响应时间统计
+  riskScore: number;                                    // 风险偏好评分（0-100）
 }
 
 export interface AgentGameItem {
