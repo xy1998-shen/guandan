@@ -1,11 +1,8 @@
-# ====================
-# 阶段1: 构建
-# ====================
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
-# 安装 pnpm 和原生模块编译工具（better-sqlite3 需要 python3/make/g++）
+# 安装 pnpm、nginx 和原生模块编译工具
 RUN npm install -g pnpm && \
-    apk add --no-cache python3 make g++
+    apk add --no-cache nginx python3 make g++
 
 WORKDIR /app
 
@@ -19,8 +16,11 @@ COPY packages/engine/ packages/engine/
 COPY packages/server/ packages/server/
 COPY packages/web/ packages/web/
 
-# 安装依赖
+# 安装依赖（编译 better-sqlite3 原生模块）
 RUN pnpm install --frozen-lockfile
+
+# 验证 better-sqlite3 原生模块已编译成功
+RUN ls node_modules/.pnpm/better-sqlite3@*/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 
 # 清理可能残留的构建产物
 RUN rm -rf packages/*/dist packages/*/*.tsbuildinfo
@@ -28,7 +28,7 @@ RUN rm -rf packages/*/dist packages/*/*.tsbuildinfo
 # 1) 先构建 shared
 RUN pnpm --filter @guandan/shared run build
 
-# 2) 构建 engine：临时移除 references 并指向 shared/dist，避免 Docker 中的 TS6305
+# 2) 构建 engine：临时移除 references 并指向 shared/dist
 RUN node -e "\
   var fs=require('fs'),f='packages/engine/tsconfig.json';\
   var c=JSON.parse(fs.readFileSync(f));\
@@ -41,34 +41,9 @@ RUN node -e "\
 RUN pnpm --filter @guandan/server run build && \
     pnpm --filter @guandan/web run build
 
-# ====================
-# 阶2: 运行时
-# ====================
-FROM node:20-alpine AS runtime
-
-# 安装 nginx
-RUN apk add --no-cache nginx
-
-WORKDIR /app
-
-# 从 builder 复制 node_modules（包含已编译的 better-sqlite3 原生模块）
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=builder /app/packages/engine/node_modules ./packages/engine/node_modules
-COPY --from=builder /app/packages/server/node_modules ./packages/server/node_modules
-
-# 复制 package.json 文件
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/
-COPY --from=builder /app/packages/engine/package.json ./packages/engine/
-COPY --from=builder /app/packages/server/package.json ./packages/server/
-
-# 复制编译后的代码
-COPY --from=builder /app/packages/shared/dist packages/shared/dist
-COPY --from=builder /app/packages/engine/dist packages/engine/dist
-COPY --from=builder /app/packages/server/dist packages/server/dist
-COPY --from=builder /app/packages/web/dist packages/web/dist
+# 清理编译工具和源代码减小镜像体积
+RUN apk del python3 make g++ && \
+    rm -rf packages/*/src packages/*/tsconfig* tsconfig.base.json
 
 # 复制 nginx 配置
 COPY nginx.conf /app/nginx.conf
