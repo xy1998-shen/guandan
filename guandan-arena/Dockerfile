@@ -21,10 +21,23 @@ COPY packages/web/ packages/web/
 # 安装依赖
 RUN pnpm install --frozen-lockfile
 
-# engine 的 tsc --build 会自动先构建 shared（通过 references）
-# 不要预构建 shared，避免 Docker 环境中的时间戳校验失败
-RUN cd packages/engine && npx tsc --build && cd ../.. && \
-    pnpm --filter @guandan/server run build && \
+# 清理可能残留的构建产物
+RUN rm -rf packages/*/dist packages/*/*.tsbuildinfo
+
+# 1) 先构建 shared
+RUN pnpm --filter @guandan/shared run build
+
+# 2) 构建 engine：临时移除 references 并指向 shared/dist，避免 Docker 中的 TS6305
+RUN node -e "\
+  var fs=require('fs'),f='packages/engine/tsconfig.json';\
+  var c=JSON.parse(fs.readFileSync(f));\
+  delete c.references;\
+  c.compilerOptions.paths={'@guandan/shared':['../shared/dist/index.d.ts']};\
+  fs.writeFileSync(f,JSON.stringify(c,null,2));" && \
+    pnpm --filter @guandan/engine run build
+
+# 3) 构建 server 和 web
+RUN pnpm --filter @guandan/server run build && \
     pnpm --filter @guandan/web run build
 
 # ====================
