@@ -45,9 +45,9 @@ RUN pnpm --filter @guandan/server run build && \
 # ====================
 FROM node:20-alpine AS runtime
 
-# 安装 pnpm 和 nginx
+# 安装 pnpm、nginx 和原生模块编译工具（better-sqlite3 需要）
 RUN npm install -g pnpm && \
-    apk add --no-cache nginx
+    apk add --no-cache nginx python3 make g++
 
 WORKDIR /app
 
@@ -59,8 +59,11 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/engine/package.json packages/engine/
 COPY packages/server/package.json packages/server/
 
-# 安装生产依赖
+# 安装生产依赖（包含原生模块编译）
 RUN pnpm install --prod --frozen-lockfile
+
+# 清理编译工具减小镜像体积
+RUN apk del python3 make g++
 
 # 从 builder 阶段复制编译后的代码
 COPY --from=builder /app/packages/shared/dist packages/shared/dist
