@@ -16,11 +16,14 @@ COPY packages/engine/ packages/engine/
 COPY packages/server/ packages/server/
 COPY packages/web/ packages/web/
 
-# 安装依赖（编译 better-sqlite3 原生模块）
+# 安装依赖
 RUN pnpm install --frozen-lockfile
 
+# 强制重新编译 better-sqlite3 原生模块
+RUN cd node_modules/.pnpm/better-sqlite3@9.6.0/node_modules/better-sqlite3 && npx --yes node-gyp rebuild
+
 # 验证 better-sqlite3 原生模块已编译成功
-RUN ls node_modules/.pnpm/better-sqlite3@*/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+RUN ls node_modules/.pnpm/better-sqlite3@9.6.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node
 
 # 清理可能残留的构建产物
 RUN rm -rf packages/*/dist packages/*/*.tsbuildinfo
