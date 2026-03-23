@@ -1,0 +1,423 @@
+/* ========== CSS Variables - Dark Theme (Default) ========== */
+:root {
+  /* Primary Colors */
+  --primary-green: #0d4a2e;
+  --primary-green-light: #156b43;
+  --primary-green-dark: #082a1a;
+
+  /* Gold / Accent */
+  --gold: #c9a84c;
+  --gold-light: #e0c56e;
+  --gold-dark: #b8973f;
+
+  /* Medal Colors */
+  --silver: #a8b5b0;
+  --bronze: #cd7f32;
+
+  /* Background */
+  --bg-dark: #0a0f0d;
+  --bg-card: #111916;
+  --bg-card-hover: #162019;
+
+  /* Text */
+  --text-primary: #f0f4f2;
+  --text-secondary: #8a9a90;
+
+  /* Border */
+  --border-color: #1e2b24;
+
+  /* Status */
+  --status-waiting: #c9a84c;
+  --status-playing: #4caf50;
+  --status-ended: #6b7c72;
+
+  /* Team Colors */
+  --team-a: #4caf50;
+  --team-b: #c9a84c;
+
+  /* Card Colors */
+  --card-red: #d32f2f;
+  --card-black: #1a1a1a;
+
+  /* Table */
+  --table-green: #0d5a38;
+  --table-border: #0a4028;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
+
+  /* Nav Background */
+  --nav-bg: rgba(10, 15, 13, 0.8);
+  --nav-bg-solid: rgba(10, 15, 13, 0.95);
+}
+
+/* ========== Light Theme ========== */
+[data-theme="light"] {
+  /* Primary Colors */
+  --primary-green: #0d4a2e;
+  --primary-green-light: #156b43;
+  --primary-green-dark: #082a1a;
+
+  /* Gold / Accent */
+  --gold: #b8973f;
+  --gold-light: #d4b356;
+  --gold-dark: #9a7d32;
+
+  /* Medal Colors */
+  --silver: #7a8a84;
+  --bronze: #b06a28;
+
+  /* Background */
+  --bg-dark: #f5f7f6;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8faf9;
+
+  /* Text */
+  --text-primary: #1a2e1f;
+  --text-secondary: #5a6a60;
+
+  /* Border */
+  --border-color: #d8e0dc;
+
+  /* Status */
+  --status-waiting: #9a7d32;
+  --status-playing: #2e8540;
+  --status-ended: #6b7c72;
+
+  /* Team Colors */
+  --team-a: #2e8540;
+  --team-b: #9a7d32;
+
+  /* Card Colors */
+  --card-red: #c62828;
+  --card-black: #1a1a1a;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+
+  /* Nav Background */
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --nav-bg-solid: rgba(255, 255, 255, 0.95);
+}
+
+/* ========== Global Reset ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family:
+    "DM Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Subtle background texture */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(
+      ellipse at 20% 20%,
+      rgba(13, 74, 46, 0.15) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 80%,
+      rgba(201, 168, 76, 0.05) 0%,
+      transparent 50%
+    );
+  pointer-events: none;
+  z-index: -1;
+}
+
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(
+      ellipse at 20% 20%,
+      rgba(13, 74, 46, 0.04) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 80%,
+      rgba(184, 151, 63, 0.03) 0%,
+      transparent 50%
+    );
+}
+
+/* ========== Typography ========== */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Outfit", sans-serif;
+}
+
+/* ========== Links ========== */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-card);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ========== Card Styles ========== */
+.card {
+  width: 60px;
+  height: 84px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  cursor: default;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  z-index: 10;
+}
+
+.card.selected {
+  transform: translateY(-16px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card.red {
+  color: var(--card-red);
+}
+
+.card.black {
+  color: var(--card-black);
+}
+
+.card.wild {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 15px rgba(201, 168, 76, 0.5);
+}
+
+/* Card Back */
+.card.back {
+  background: linear-gradient(135deg, #1a3a5c 0%, #0d2840 100%);
+  border-color: #2a4a6c;
+}
+
+.card.back::before {
+  content: "♠";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.1);
+}
+
+/* ========== Animations ========== */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(201, 168, 76, 0.6);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px) rotate(-1deg);
+  }
+  75% {
+    transform: translateX(4px) rotate(1deg);
+  }
+}
+
+@keyframes cardFlyIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bomb-effect {
+  animation: shake 0.3s ease-in-out 2;
+}
+
+.card-fly-in {
+  animation: cardFlyIn 0.3s ease-out;
+}
+
+.status-processing {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ========== Utility Classes ========== */
+.font-outfit {
+  font-family: "Outfit", sans-serif;
+}
+
+.font-dm-sans {
+  font-family: "DM Sans", sans-serif;
+}
+
+/* ========== Ant Design Overrides ========== */
+.ant-table {
+  background: transparent !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--bg-card) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--border-color) !important;
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: var(--bg-card-hover) !important;
+}
+
+.ant-empty-description {
+  color: var(--text-secondary);
+}
+
+.ant-card {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+}
+
+.ant-card-head {
+  border-bottom-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.ant-card-body {
+  color: var(--text-primary);
+}
+
+.ant-tag {
+  border-radius: 4px;
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px);
+}
+
+.ant-badge-status-processing {
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+/* Leaderboard Rank Row Colors */
+.rank-gold td {
+  background-color: rgba(201, 168, 76, 0.1) !important;
+}
+
+.rank-silver td {
+  background-color: rgba(168, 181, 176, 0.08) !important;
+}
+
+.rank-bronze td {
+  background-color: rgba(205, 127, 50, 0.06) !important;
+}
+
+[data-theme="light"] .rank-gold td {
+  background-color: rgba(184, 151, 63, 0.08) !important;
+}
+
+[data-theme="light"] .rank-silver td {
+  background-color: rgba(122, 138, 132, 0.06) !important;
+}
+
+[data-theme="light"] .rank-bronze td {
+  background-color: rgba(176, 106, 40, 0.05) !important;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 1280px) {
+  .card {
+    width: 50px;
+    height: 70px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .card {
+    width: 40px;
+    height: 56px;
+  }
+}

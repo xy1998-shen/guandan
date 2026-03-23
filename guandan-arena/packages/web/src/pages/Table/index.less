@@ -1,0 +1,451 @@
+/* ========== Table Page ========== */
+.table-page {
+  min-height: 100vh;
+  background-color: var(--bg-dark);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &.table-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ff4d4f;
+  }
+}
+
+/* ========== Top Navigation ========== */
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem !important;
+  background: var(--nav-bg-solid) !important;
+  border-bottom: 1px solid var(--border-color);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 60px !important;
+  line-height: 60px !important;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .nav-left {
+    display: flex;
+    align-items: center;
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+
+    .room-info {
+      display: flex;
+      align-items: center;
+
+      .room-name {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+      }
+
+      .room-status-tag {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 10px;
+        border-radius: 12px;
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          background: currentColor;
+          border-radius: 50%;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      }
+    }
+  }
+
+  .nav-center {
+    display: flex;
+    align-items: center;
+    min-width: 280px;
+
+    .trump-label {
+      font-size: 0.85rem;
+    }
+
+    .trump-card {
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 4px 12px;
+      border-radius: 6px;
+
+      [data-theme="light"] & {
+        color: white !important;
+      }
+    }
+
+    .turn-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .turn-progress-wrap {
+      width: 100%;
+      max-width: 260px;
+    }
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+
+      &.connected {
+        color: #52c41a;
+      }
+    }
+
+    .round-info {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+  }
+}
+
+/* ========== Main Table Area ========== */
+.table-container {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center,
+      rgba(13, 74, 46, 0.3) 0%,
+      transparent 70%);
+
+  [data-theme="light"] & {
+    background: radial-gradient(ellipse at center,
+        rgba(13, 74, 46, 0.08) 0%,
+        transparent 70%);
+  }
+}
+
+/* ========== Floating Info Panels ========== */
+.table-info-left {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  z-index: 10;
+}
+
+.table-info-right {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 10;
+}
+
+.team-scores {
+  display: flex;
+  align-items: center;
+}
+
+.team-score {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ant-card-body {
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .team-indicator {
+    width: 6px;
+    height: 24px;
+    border-radius: 3px;
+
+    &.team-a {
+      background: var(--team-a);
+    }
+
+    &.team-b {
+      background: var(--team-b);
+
+      [data-theme="light"] & {
+        background: var(--gold);
+      }
+    }
+  }
+
+  .score-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    .team-name {
+      font-size: 0.65rem;
+    }
+
+    .level {
+      font-family: "Outfit", sans-serif;
+      font-size: 1.1rem;
+    }
+
+    .team-a-level {
+      color: var(--team-a);
+    }
+
+    .team-b-level {
+      color: var(--team-b);
+
+      [data-theme="light"] & {
+        color: var(--gold-dark);
+      }
+    }
+  }
+}
+
+.spectators {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ant-card-body {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .spectator-label {
+    color: var(--text-secondary);
+  }
+
+  .count {
+    color: var(--text-primary);
+  }
+}
+
+/* ========== Poker Table Wrapper ========== */
+.poker-table-wrapper {
+  width: 900px;
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== Bottom Info Bar ========== */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: var(--bg-card) !important;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 !important;
+
+  [data-theme="light"] & {
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .ant-card-body {
+    padding: 1rem 2rem;
+    height: 100%;
+  }
+}
+
+.game-log {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  height: 170px;
+  padding: 0.75rem 1rem;
+  overflow-y: auto;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .game-log-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.log-entries {
+  .ant-list-empty-text {
+    padding: 8px 0;
+  }
+
+  .log-empty {
+    font-style: italic;
+  }
+
+  .ant-list-item {
+    padding: 4px 0;
+    border-bottom: none !important;
+  }
+}
+
+.log-entry {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+
+  .player {
+    color: var(--gold);
+    font-weight: 500;
+    margin-right: 4px;
+
+    [data-theme="light"] & {
+      color: var(--gold-dark);
+    }
+  }
+
+  .action {
+    color: var(--text-primary);
+  }
+
+  .combo-tag {
+    margin-left: 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    line-height: 1;
+    border-color: rgba(201, 168, 76, 0.4);
+    color: var(--gold);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  &.pass .action {
+    color: #999;
+  }
+
+  &.bomb .action {
+    color: #ff4d4f;
+  }
+
+  &.finish .action {
+    color: #ffd700;
+  }
+
+  &.game .action {
+    color: #52c41a;
+  }
+
+  &.round .action {
+    color: #1890ff;
+  }
+}
+
+.round-summary-modal {
+  .ant-modal-content {
+    border-radius: 12px;
+  }
+
+  .round-summary-content {
+    text-align: center;
+
+    h3 {
+      margin-bottom: 10px;
+      font-family: "Outfit", sans-serif;
+    }
+
+    p {
+      margin: 6px 0;
+    }
+  }
+}
+
+.game-summary-content {
+  p {
+    margin: 8px 0;
+  }
+}
+
+/* ========== Pulse Animation ========== */
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 1280px) {
+  .poker-table-wrapper {
+    width: 750px;
+    height: 420px;
+  }
+
+  .table-container {
+    bottom: 180px;
+  }
+
+  .bottom-bar {
+    height: 180px;
+  }
+
+  .game-log {
+    height: 150px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .poker-table-wrapper {
+    width: 600px;
+    height: 350px;
+  }
+}

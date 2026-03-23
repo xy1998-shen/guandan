@@ -1,0 +1,50 @@
+.agent-detail-page {
+  min-height: 100vh;
+}
+
+.agent-detail-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--nav-bg) !important;
+
+  .logo {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 700;
+
+    span {
+      color: var(--gold);
+    }
+  }
+}
+
+.agent-detail-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agent-summary-card,
+.agent-trend-card,
+.agent-opponent-card,
+.agent-games-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.row-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trend-svg {
+  width: 100%;
+  max-width: 500px;
+  height: 140px;
+}

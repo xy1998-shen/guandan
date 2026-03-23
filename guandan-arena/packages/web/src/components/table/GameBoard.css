@@ -1,0 +1,146 @@
+/* ========== Game Board ========== */
+.game-board {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-board-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== Elliptical Table Surface ========== */
+.table-surface {
+  position: absolute;
+  width: 750px;
+  height: 400px;
+  background: linear-gradient(
+    145deg,
+    var(--table-green) 0%,
+    var(--primary-green) 50%,
+    var(--primary-green-dark) 100%
+  );
+  border-radius: 200px;
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 0 0 12px var(--table-border),
+    0 0 0 16px rgba(201, 168, 76, 0.3),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.table-surface::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.05);
+  border-radius: 190px;
+}
+
+.team-links {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.team-link {
+  stroke-width: 0.5;
+  stroke-dasharray: 1.6 1.2;
+  opacity: 0.45;
+}
+
+.team-link.team-a {
+  stroke: #4096ff;
+}
+
+.team-link.team-b {
+  stroke: #faad14;
+}
+
+[data-theme="light"] .table-surface {
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.4),
+    0 0 0 12px var(--table-border),
+    0 0 0 16px rgba(201, 168, 76, 0.3),
+    0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* ========== Waiting Message ========== */
+.waiting-message {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.25rem;
+  font-family: "Outfit", sans-serif;
+  z-index: 10;
+}
+
+/* ========== Player Positions ========== */
+.player-position {
+  position: absolute;
+  z-index: 10;
+}
+
+.player-position.top {
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-position.bottom {
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-position.left {
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.player-position.right {
+  right: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ========== Center Play Area ========== */
+.center-play-area {
+  position: absolute;
+  width: 400px;
+  height: 250px;
+  z-index: 5;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 1280px) {
+  .table-surface {
+    width: 620px;
+    height: 330px;
+  }
+
+  .center-play-area {
+    width: 340px;
+    height: 220px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .table-surface {
+    width: 500px;
+    height: 280px;
+  }
+
+  .center-play-area {
+    width: 280px;
+    height: 180px;
+  }
+}

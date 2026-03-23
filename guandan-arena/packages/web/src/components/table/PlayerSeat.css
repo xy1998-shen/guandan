@@ -1,0 +1,221 @@
+/* ========== Player Seat ========== */
+.player-seat {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.player-seat.active {
+  background-color: rgba(255, 215, 0, 0.15);
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.4);
+  animation: glow 2s ease-in-out infinite;
+}
+
+.player-seat.team-a {
+  border-color: rgba(24, 144, 255, 0.45);
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.player-seat.team-b {
+  border-color: rgba(250, 173, 20, 0.45);
+  background-color: rgba(250, 173, 20, 0.1);
+}
+
+/* Position specific layouts */
+.player-seat.top,
+.player-seat.bottom {
+  flex-direction: column;
+  min-height: 120px;
+}
+
+.player-seat.top .player-info,
+.player-seat.bottom .player-info {
+  order: 1;
+}
+
+.player-seat.bottom {
+  flex-direction: column-reverse;
+}
+
+.player-seat.left,
+.player-seat.right {
+  flex-direction: row;
+  min-width: 120px;
+}
+
+.player-seat.left {
+  flex-direction: row;
+}
+
+.player-seat.right {
+  flex-direction: row-reverse;
+}
+
+/* ========== Player Info ========== */
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.player-info.left,
+.player-info.right {
+  position: absolute;
+}
+
+.player-info.left {
+  right: calc(100% + 15px);
+}
+
+.player-info.right {
+  left: calc(100% + 15px);
+}
+
+/* ========== Player Name Tag ========== */
+.player-name-tag {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+[data-theme="light"] .player-name-tag {
+  box-shadow: var(--shadow-sm);
+}
+
+.player-seat.active .player-name-tag {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.4);
+}
+
+/* ========== Team Badge ========== */
+.team-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.team-badge.team-a {
+  background: var(--team-a);
+  color: white;
+}
+
+.team-badge.team-b {
+  background: var(--team-b);
+  color: var(--bg-dark);
+}
+
+[data-theme="light"] .team-badge.team-b {
+  color: var(--text-primary);
+}
+
+/* ========== Player Name ========== */
+.player-name {
+  font-family: "Outfit", sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========== Card Count ========== */
+.card-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+[data-theme="light"] .card-count {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.finish-badge {
+  background: var(--gold);
+  color: var(--bg-dark);
+}
+
+/* ========== Hand Cards Container ========== */
+.hand-cards {
+  display: flex;
+  position: relative;
+  justify-content: center;
+}
+
+.hand-cards.top,
+.hand-cards.bottom {
+  flex-direction: row;
+  width: 320px;
+  height: 70px;
+  margin-top: 8px;
+}
+
+.hand-cards.bottom {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.hand-cards.left,
+.hand-cards.right {
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+  height: 240px;
+  margin-left: 8px;
+}
+
+.hand-cards.left {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+/* ========== Empty Hand ========== */
+.hand-cards-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+}
+
+.hand-cards-empty.top,
+.hand-cards-empty.bottom {
+  width: 200px;
+  height: 70px;
+}
+
+.hand-cards-empty.left,
+.hand-cards-empty.right {
+  width: 60px;
+  height: 150px;
+}
+
+/* ========== Card Wrapper ========== */
+.card-wrapper {
+  transition: transform 0.2s ease;
+}
+
+.card-wrapper:hover {
+  z-index: 100 !important;
+}

@@ -1,0 +1,583 @@
+/* ========== Leaderboard Page ========== */
+.leaderboard-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+/* ========== Navigation ========== */
+.leaderboard-nav {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 4rem !important;
+  height: auto !important;
+  line-height: normal !important;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--nav-bg) !important;
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .logo {
+    font-family: "Outfit", sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    flex-shrink: 0;
+    line-height: 1;
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-green-light) 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(13, 74, 46, 0.4);
+    }
+
+    span {
+      color: var(--gold);
+
+      [data-theme="light"] & {
+        color: var(--gold-dark);
+      }
+    }
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    flex: 1;
+
+    a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s ease;
+      position: relative;
+
+      &:hover,
+      &.active {
+        color: var(--text-primary);
+      }
+
+      &.active::after {
+        content: "";
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--gold);
+        border-radius: 1px;
+      }
+    }
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .nav-doc-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(201, 168, 76, 0.15);
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    border-radius: 8px;
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(201, 168, 76, 0.25);
+      border-color: var(--gold);
+    }
+
+    [data-theme="light"] & {
+      background: rgba(154, 125, 50, 0.1);
+      border-color: rgba(154, 125, 50, 0.25);
+      color: #9a7d32;
+
+      &:hover {
+        background: rgba(154, 125, 50, 0.18);
+        border-color: #9a7d32;
+      }
+    }
+  }
+}
+
+/* ========== Main Content ========== */
+.leaderboard-main {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  flex: 1;
+}
+
+/* ========== Page Header ========== */
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  h1.ant-typography {
+    font-family: "Outfit", sans-serif;
+    font-size: 2.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+
+    [data-theme="light"] & {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+
+  .page-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+  }
+}
+
+/* ========== Stats Summary ========== */
+.stats-summary {
+  margin-bottom: 3rem;
+}
+
+.stat-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+  text-align: center;
+  transition: all 0.3s ease;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:hover {
+    border-color: var(--primary-green) !important;
+    transform: translateY(-2px);
+
+    [data-theme="light"] & {
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  .ant-card-body {
+    padding: 1.5rem;
+  }
+
+  .stat-item {
+    .ant-statistic-title {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .ant-statistic-content {
+      font-family: "Outfit", sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gold);
+
+      [data-theme="light"] & {
+        color: var(--gold-dark);
+      }
+    }
+  }
+}
+
+/* ========== Leaderboard Table Card ========== */
+.leaderboard-table-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 20px !important;
+  overflow: hidden;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ant-card-body {
+    padding: 0;
+  }
+}
+
+/* ========== Antd Table 样式覆盖 ========== */
+.leaderboard-table {
+  .ant-table {
+    background: transparent;
+  }
+
+  .ant-table-thead>tr>th {
+    background: rgba(13, 74, 46, 0.2) !important;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    [data-theme="light"] & {
+      background: rgba(13, 74, 46, 0.06) !important;
+    }
+
+    &::before {
+      display: none; // 移除 Antd 默认的分割线
+    }
+  }
+
+  .ant-table-tbody>tr>td {
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .ant-table-tbody>tr:last-child>td {
+    border-bottom: none;
+  }
+
+  .ant-table-tbody>tr:hover>td {
+    background: var(--bg-card-hover) !important;
+  }
+
+  // 浅色模式隔行变色
+  [data-theme="light"] & .ant-table-tbody>tr:nth-child(even)>td {
+    background: rgba(0, 0, 0, 0.015);
+  }
+
+  [data-theme="light"] & .ant-table-tbody>tr:nth-child(even):hover>td {
+    background: var(--bg-card-hover) !important;
+  }
+
+  // 排序图标颜色
+  .ant-table-column-sorter-up.active,
+  .ant-table-column-sorter-down.active {
+    color: var(--gold);
+  }
+}
+
+/* ========== Rank Column ========== */
+.rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rank-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  background: var(--bg-dark);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+
+  [data-theme="light"] & {
+    background: var(--bg-dark);
+    border-color: var(--border-color);
+  }
+}
+
+// 前三名排名徽章
+.rank-1 .rank-badge {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  color: var(--bg-dark);
+  border: none;
+  box-shadow: 0 4px 15px rgba(201, 168, 76, 0.4);
+
+  [data-theme="light"] & {
+    color: white;
+    box-shadow: 0 4px 15px rgba(184, 151, 63, 0.35);
+  }
+}
+
+.rank-2 .rank-badge {
+  background: linear-gradient(135deg, var(--silver) 0%, #c8d0cc 100%);
+  color: var(--bg-dark);
+  border: none;
+  box-shadow: 0 4px 15px rgba(168, 181, 176, 0.3);
+
+  [data-theme="light"] & {
+    background: linear-gradient(135deg, var(--silver) 0%, #9aa8a2 100%);
+    color: white;
+  }
+}
+
+.rank-3 .rank-badge {
+  background: linear-gradient(135deg, var(--bronze) 0%, #e89b5d 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(205, 127, 50, 0.3);
+
+  [data-theme="light"] & {
+    background: linear-gradient(135deg, var(--bronze) 0%, #d4884a 100%);
+  }
+}
+
+/* ========== Agent Column ========== */
+.agent-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.agent-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+
+  [data-theme="light"] & {
+    box-shadow: var(--shadow-sm);
+  }
+
+  &.gold {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+    color: var(--bg-dark);
+
+    [data-theme="light"] & {
+      color: white;
+    }
+  }
+}
+
+.agent-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .agent-name {
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--gold);
+    }
+  }
+
+  .agent-creator {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+}
+
+.recent-games-card {
+  margin-top: 20px;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 16px !important;
+
+  .recent-games-header {
+    margin-bottom: 12px;
+  }
+
+  .recent-game-item {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .recent-game-main {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .recent-game-agents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .agent-link-tag {
+    cursor: pointer;
+  }
+}
+
+/* ========== Win Rate ========== */
+.winrate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .winrate-progress {
+    flex: 1;
+
+    .ant-progress-inner {
+      background: rgba(255, 255, 255, 0.1);
+
+      [data-theme="light"] & {
+        background: rgba(0, 0, 0, 0.08);
+      }
+    }
+  }
+
+  .winrate-value {
+    font-weight: 600;
+    min-width: 45px;
+    text-align: right;
+    color: var(--text-primary);
+  }
+
+  &.winrate-high .winrate-progress .ant-progress-bg {
+    background: linear-gradient(90deg, var(--gold), var(--gold-light)) !important;
+
+    [data-theme="light"] & {
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold)) !important;
+    }
+  }
+}
+
+/* ========== ELO Score ========== */
+.elo-score {
+  font-family: "Outfit", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+
+  [data-theme="light"] & {
+    color: var(--gold-dark);
+  }
+
+  &.top-elo {
+    font-size: 1.25rem;
+  }
+}
+
+/* ========== Footer ========== */
+.leaderboard-footer {
+  border-top: 1px solid var(--border-color);
+  padding: 2rem 4rem;
+  text-align: center;
+  background: transparent !important;
+
+  [data-theme="light"] & {
+    background: var(--bg-card) !important;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  a {
+    color: var(--gold);
+    text-decoration: none;
+
+    [data-theme="light"] & {
+      color: var(--gold-dark);
+    }
+  }
+}
+
+/* ========== States ========== */
+.error-message {
+  padding: 16px;
+  color: #ff4d4f;
+  text-align: center;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 1280px) {
+  .leaderboard-nav {
+    padding: 1.25rem 2rem !important;
+  }
+
+  .rank-badge {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  .agent-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .rank-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+  }
+
+  .agent-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .leaderboard-table {
+
+    .ant-table-thead>tr>th,
+    .ant-table-tbody>tr>td {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .leaderboard-main {
+    padding: 2rem 1rem;
+  }
+
+  .page-header h1.ant-typography {
+    font-size: 2rem;
+  }
+
+  .leaderboard-nav .nav-links {
+    display: none;
+  }
+}

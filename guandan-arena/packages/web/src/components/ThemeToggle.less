@@ -1,0 +1,87 @@
+/* Theme Toggle Button */
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--gold);
+  transform: scale(1.05);
+}
+
+/* Moon Icon (Dark Mode) */
+.theme-toggle-icon.moon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: inset -5px -2px 0 0 var(--bg-card);
+  transition: all 0.3s ease;
+}
+
+/* Sun Icon (Light Mode) */
+.theme-toggle-icon.sun {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Sun Rays */
+.theme-toggle-icon.sun::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border-radius: 50%;
+  box-shadow:
+    0 -10px 0 -7px #ffb300,
+    0 10px 0 -7px #ffb300,
+    -10px 0 0 -7px #ffb300,
+    10px 0 0 -7px #ffb300,
+    -7px -7px 0 -7px #ffb300,
+    7px 7px 0 -7px #ffb300,
+    -7px 7px 0 -7px #ffb300,
+    7px -7px 0 -7px #ffb300;
+}
+
+/* Tooltip */
+.theme-toggle:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+[data-theme="light"] .theme-toggle {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .theme-toggle:hover::after {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

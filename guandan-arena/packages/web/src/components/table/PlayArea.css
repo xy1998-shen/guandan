@@ -1,0 +1,141 @@
+/* ========== Play Area ========== */
+.play-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  border: 3px solid rgba(255, 215, 0, 0.3);
+}
+
+/* ========== Center Text ========== */
+.center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 24px;
+  font-weight: bold;
+  font-family: "Outfit", sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ========== Play Slot ========== */
+.play-slot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+  min-height: 80px;
+}
+
+.play-slot.top {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.play-slot.bottom {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.play-slot.left {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.play-slot.right {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ========== Played Label ========== */
+.played-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+/* ========== Pass Indicator ========== */
+.pass-indicator {
+  padding: 8px 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  color: #999;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ========== Played Cards ========== */
+.played-cards {
+  display: flex;
+  gap: 2px;
+  position: relative;
+}
+
+.played-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.combo-label {
+  font-size: 0.68rem;
+  line-height: 1;
+  color: #ffe58f;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 229, 143, 0.45);
+  border-radius: 10px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.played-cards.horizontal {
+  flex-direction: row;
+}
+
+.played-cards.vertical {
+  flex-direction: column;
+}
+
+.played-card {
+  position: relative;
+}
+
+/* ========== Waiting Slot ========== */
+.waiting-slot {
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 12px;
+}
+
+/* ========== Trick Info ========== */
+.trick-info {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+[data-theme="light"] .trick-info {
+  color: var(--text-secondary);
+}
